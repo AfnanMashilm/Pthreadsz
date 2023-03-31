@@ -1,0 +1,43 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <omp.h>
+
+int main()
+{
+    int rows = 1000, cols = 1000, depth = 1000;
+    double *matrixA = (double*) calloc(rows*depth, sizeof(double));
+    double *matrixB = (double*) calloc(depth*cols, sizeof(double));
+    double *matrixC = (double*) calloc(rows*cols, sizeof(double));
+
+    int a, b, c;
+    double start_time, end_time;
+    start_time = omp_get_wtime();
+    for (a = 0; a < rows; a++) {
+        for (b = 0; b < depth; b++) {
+            matrixA[a*depth+b] = a + b;
+        }
+    }
+
+    for (a = 0; a < depth; a++) {
+        for (b = 0; b < cols; b++) {
+            matrixB[a*cols+b] = a * b;
+        }
+    }
+   
+    #pragma omp parallel for  private(a,b,c) collapse(2) reduction(+:matrixC[:rows*cols])
+    for (a = 0; a < rows; a++) {
+        for (b = 0; b < cols; b++) {
+            for (c = 0; c < depth; c++) {
+                matrixC[a*cols + b] += matrixA[a*depth + c] * matrixB[c*cols + b];
+            }
+        }
+    }
+
+    end_time = omp_get_wtime();
+    printf("Execution time: %f seconds\n", end_time - start_time);
+
+    free(matrixA);
+    free(matrixB);
+    free(matrixC);
+    return 0;
+}
